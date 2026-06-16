@@ -1,0 +1,35 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: loanpro-db
+    ports:
+      - "5433:5432"
+    env_file: ".env"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  flyway:
+    image: flyway/flyway:10-alpine
+    container_name: loanpro-flyway
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file: ".env"    
+    volumes:
+      - ./backend/src/main/resources/db/migration:/flyway/sql
+    command: >
+      -url=jdbc:postgresql://loanpro-db:5432/${POSTGRES_DB}
+      -user=${POSTGRES_USER}
+      -password=${POSTGRES_PASSWORD}
+      migrate
+      
+volumes:
+  postgres_data:
+    driver: local
