@@ -1,8 +1,13 @@
 package com.loanpro.ecommerce.infrastructure.web;
 
+import com.loanpro.ecommerce.application.exception.EmptyOrderException;
+import com.loanpro.ecommerce.application.exception.InsufficientStockException;
 import com.loanpro.ecommerce.application.exception.InvalidCsvException;
+import com.loanpro.ecommerce.application.exception.PaymentFailedException;
+import com.loanpro.ecommerce.application.exception.PaymentServiceUnavailableException;
 import com.loanpro.ecommerce.application.exception.ResourceNotFoundException;
 import com.loanpro.ecommerce.application.exception.DuplicateSkuException;
+import com.loanpro.ecommerce.application.exception.UnsupportedPaymentMethodException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -66,5 +71,45 @@ public class GlobalExceptionHandler {
         body.put("error", "Payload Too Large");
         body.put("message", "File size exceeds maximum allowed size of 10MB");
         return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE).body(body);
+    }
+
+    @ExceptionHandler(InsufficientStockException.class)
+    public ResponseEntity<Map<String, Object>> handleInsufficientStock(InsufficientStockException ex) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("error", "Insufficient Stock");
+        body.put("message", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(body);
+    }
+
+    @ExceptionHandler(EmptyOrderException.class)
+    public ResponseEntity<Map<String, Object>> handleEmptyOrder(EmptyOrderException ex) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("error", "Bad Request");
+        body.put("message", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
+    }
+
+    @ExceptionHandler(PaymentFailedException.class)
+    public ResponseEntity<Map<String, Object>> handlePaymentFailed(PaymentFailedException ex) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("error", "Payment Failed");
+        body.put("message", ex.getMessage());
+        return ResponseEntity.status(402).body(body);
+    }
+
+    @ExceptionHandler(PaymentServiceUnavailableException.class)
+    public ResponseEntity<Map<String, Object>> handlePaymentUnavailable(PaymentServiceUnavailableException ex) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("error", "Service Unavailable");
+        body.put("message", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(body);
+    }
+
+    @ExceptionHandler(UnsupportedPaymentMethodException.class)
+    public ResponseEntity<Map<String, Object>> handleUnsupportedPayment(UnsupportedPaymentMethodException ex) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("error", "Bad Request");
+        body.put("message", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
     }
 }
