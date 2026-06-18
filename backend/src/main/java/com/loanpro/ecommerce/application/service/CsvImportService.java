@@ -8,7 +8,6 @@ import com.loanpro.ecommerce.domain.repository.CategoryRepository;
 import com.loanpro.ecommerce.domain.repository.ProductRepository;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.BufferedReader;
@@ -31,16 +30,20 @@ public class CsvImportService {
     );
     private static final long ERROR_FILE_TTL_MS = 10 * 60 * 1000;
 
+    private static final int BATCH_SIZE = 50;
+
     private final ProductRepository productRepository;
     private final CategoryRepository categoryRepository;
+    private final ProductBatchSaver productBatchSaver;
     private final ConcurrentHashMap<String, ErrorFileEntry> errorFileStore = new ConcurrentHashMap<>();
 
-    public CsvImportService(ProductRepository productRepository, CategoryRepository categoryRepository) {
+    public CsvImportService(ProductRepository productRepository, CategoryRepository categoryRepository,
+                            ProductBatchSaver productBatchSaver) {
         this.productRepository = productRepository;
         this.categoryRepository = categoryRepository;
+        this.productBatchSaver = productBatchSaver;
     }
 
-    @Transactional
     public CsvImportResult importProducts(MultipartFile file) {
         validateFile(file);
 
@@ -75,6 +78,9 @@ public class CsvImportService {
         int errorCount = 0;
         List<String[]> errorRows = new ArrayList<>();
         int columnCount = EXPECTED_HEADERS.size();
+
+        List<Product> batch = new ArrayList<>();
+        List<String[]> batchMappedRows = new ArrayList<>();
 
         for (String line : dataLines) {
             if (line.isBlank()) {
@@ -130,9 +136,24 @@ public class CsvImportService {
                     .weightKg(weightKg)
                     .build();
 
-            productRepository.save(product);
-            existingSkus.add(sku);
-            successCount++;
+            batch.add(product);
+            batchMappedRows.add(mapped);
+
+            if (batch.size() >= BATCH_SIZE) {
+                int saved = flushBatch(batch, batchMappedRows, errorRows, columnCount);
+                successCount += saved;
+                errorCount += (batch.size() - saved);
+                batch.clear();
+                batchMappedRows.clear();
+            }
+        }
+
+        if (!batch.isEmpty()) {
+            int saved = flushBatch(batch, batchMappedRows, errorRows, columnCount);
+            successCount += saved;
+            errorCount += (batch.size() - saved);
+            batch.clear();
+            batchMappedRows.clear();
         }
 
         CsvImportResult.CsvImportResultBuilder resultBuilder = CsvImportResult.builder()
@@ -162,6 +183,22 @@ public class CsvImportService {
     public void cleanupExpiredErrorFiles() {
         Instant cutoff = Instant.now().minusMillis(ERROR_FILE_TTL_MS);
         errorFileStore.entrySet().removeIf(e -> e.getValue().createdAt.isBefore(cutoff));
+    }
+
+    private int flushBatch(List<Product> batch, List<String[]> batchMappedRows,
+                           List<String[]> errorRows, int columnCount) {
+        try {
+            productBatchSaver.saveBatch(batch);
+            return batch.size();
+        } catch (Exception e) {
+            for (String[] mapped : batchMappedRows) {
+                String[] errorRow = new String[columnCount + 1];
+                System.arraycopy(mapped, 0, errorRow, 0, columnCount);
+                errorRow[columnCount] = "batch insert failed: " + e.getMessage();
+                errorRows.add(errorRow);
+            }
+            return 0;
+        }
     }
 
     private void validateFile(MultipartFile file) {
