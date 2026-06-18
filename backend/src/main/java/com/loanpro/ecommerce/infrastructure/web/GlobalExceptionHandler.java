@@ -1,5 +1,6 @@
 package com.loanpro.ecommerce.infrastructure.web;
 
+import com.loanpro.ecommerce.application.exception.InvalidCsvException;
 import com.loanpro.ecommerce.application.exception.ResourceNotFoundException;
 import com.loanpro.ecommerce.application.exception.DuplicateSkuException;
 import org.springframework.http.HttpStatus;
@@ -44,5 +45,15 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, String>> handleDuplicateSku(DuplicateSkuException ex) {
         return ResponseEntity.status(HttpStatus.CONFLICT)
                 .body(Map.of("error", ex.getMessage()));
+    }
+
+    @ExceptionHandler(InvalidCsvException.class)
+    public ResponseEntity<Map<String, Object>> handleInvalidCsv(InvalidCsvException ex) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("timestamp", LocalDateTime.now());
+        body.put("status", 400);
+        body.put("error", "Bad Request");
+        body.put("message", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
     }
 }
