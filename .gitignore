@@ -28,3 +28,6 @@ replay_pid*
 
 # Docker volumes
 postgres_data/
+
+# Local Spring config
+backend/src/main/resources/application-local.yml
