@@ -3,7 +3,7 @@ services:
     image: postgres:16-alpine
     container_name: loanpro-db
     ports:
-      - "5433:5432"
+      - "5432:5432"
     env_file: ".env"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
@@ -14,6 +14,9 @@ services:
     restart: unless-stopped
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./db/data:/flyway/data
+    networks:
+      - loanpro-network
 
   flyway:
     image: flyway/flyway:10-alpine
@@ -21,15 +24,52 @@ services:
     depends_on:
       db:
         condition: service_healthy
-    env_file: ".env"    
+    env_file: ".env"
     volumes:
-      - ./backend/src/main/resources/db/migration:/flyway/sql
+      - ./backend/src/main/resources/db/migration:/flyway/migrations
     command: >
       -url=jdbc:postgresql://loanpro-db:5432/${POSTGRES_DB}
       -user=${POSTGRES_USER}
       -password=${POSTGRES_PASSWORD}
+      -locations=filesystem:/flyway/migrations
       migrate
-      
+    networks:
+      - loanpro-network
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: loanpro-backend
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - "8080:8080"
+    depends_on:
+      flyway:
+        condition: service_completed_successfully
+    networks:
+      - loanpro-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: loanpro-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - loanpro-network
+
 volumes:
   postgres_data:
     driver: local
+
+networks:
+  loanpro-network:
+    driver: bridge
