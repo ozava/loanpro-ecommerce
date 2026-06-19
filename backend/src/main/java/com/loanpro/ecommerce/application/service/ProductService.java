@@ -2,6 +2,7 @@ package com.loanpro.ecommerce.application.service;
 
 import com.loanpro.ecommerce.application.dto.ProductRequest;
 import com.loanpro.ecommerce.application.dto.ProductResponse;
+import com.loanpro.ecommerce.application.exception.DuplicateSkuException;
 import com.loanpro.ecommerce.application.exception.ResourceNotFoundException;
 import com.loanpro.ecommerce.domain.entity.Category;
 import com.loanpro.ecommerce.domain.entity.Product;
@@ -38,6 +39,10 @@ public class ProductService {
 
     @Transactional
     public ProductResponse createProduct(ProductRequest request) {
+        productRepository.findBySku(request.sku())
+                .ifPresent(existing -> {
+                    throw new DuplicateSkuException("SKU already exists: " + request.sku());
+                });
         Product product = mapToEntity(request, new Product());
         return ProductResponse.fromEntity(productRepository.save(product));
     }
