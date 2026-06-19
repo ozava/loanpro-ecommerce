@@ -12,14 +12,9 @@ Enterprise-grade e-commerce application built with Java 17, Spring Boot 3.5, Rea
 git clone https://github.com/ozava/loanpro-ecommerce.git
 cd loanpro-ecommerce
 
-# Create the .env file with database credentials
-echo "POSTGRES_HOST=loanpro-db" > .env
-echo "POSTGRES_DB=loanpro-db" >> .env
-echo "POSTGRES_PASSWORD=LocalDB_2026!" >> .env
-echo "POSTGRES_USER=postgres" >> .env
-echo "POSTGRES_PORT=5432" >> .env
-echo "POSTGRES_SCHEMA=public" >> .env
-echo "SPRING_PROFILES_ACTIVE=docker" >> .env
+# Copy the example environment file
+cp .env.example .env
+# If using Windows PowerShell: Copy-Item .env.example .env
 
 # Build and start everything
 docker compose up -d --build
