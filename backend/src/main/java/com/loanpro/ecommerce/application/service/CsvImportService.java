@@ -70,7 +70,7 @@ public class CsvImportService {
                 .collect(Collectors.toSet());
 
         Map<String, Category> categoryCache = categoryRepository.findAll().stream()
-                .collect(Collectors.toMap(Category::getName, c -> c));
+                .collect(Collectors.toMap(c -> c.getName().toLowerCase(), c -> c, (a, b) -> a));
 
         Set<String> csvSeenSkus = new HashSet<>();
         int totalRows = 0;
@@ -123,8 +123,11 @@ public class CsvImportService {
                 continue;
             }
 
-            Category category = categoryCache.computeIfAbsent(categoryName,
-                    n -> categoryRepository.save(Category.builder().name(n).build()));
+            String normalizedCategory = categoryName.trim().substring(0, 1).toUpperCase()
+                    + categoryName.trim().substring(1).toLowerCase();
+            Category category = categoryCache.computeIfAbsent(normalizedCategory.toLowerCase(),
+                    n -> categoryRepository.findByNameIgnoreCase(normalizedCategory)
+                            .orElseGet(() -> categoryRepository.save(Category.builder().name(normalizedCategory).build())));
 
             Product product = Product.builder()
                     .name(name)
