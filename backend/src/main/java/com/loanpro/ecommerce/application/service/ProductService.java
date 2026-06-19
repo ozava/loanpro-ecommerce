@@ -7,10 +7,10 @@ import com.loanpro.ecommerce.domain.entity.Category;
 import com.loanpro.ecommerce.domain.entity.Product;
 import com.loanpro.ecommerce.domain.repository.CategoryRepository;
 import com.loanpro.ecommerce.domain.repository.ProductRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
 
 @Service
 public class ProductService {
@@ -24,10 +24,9 @@ public class ProductService {
     }
 
     @Transactional(readOnly = true)
-    public List<ProductResponse> getAllProducts() {
-        return productRepository.findAll().stream()
-                .map(ProductResponse::fromEntity)
-                .toList();
+    public Page<ProductResponse> getAllProducts(Pageable pageable) {
+        return productRepository.findAll(pageable)
+                .map(ProductResponse::fromEntity);
     }
 
     @Transactional(readOnly = true)
@@ -66,11 +65,9 @@ public class ProductService {
     }
 
     @Transactional(readOnly = true)
-    public List<ProductResponse> searchProducts(String query) {
-        return productRepository.findByNameContainingIgnoreCaseOrDescriptionContainingIgnoreCase(query, query)
-                .stream()
-                .map(ProductResponse::fromEntity)
-                .toList();
+    public Page<ProductResponse> searchProducts(String query, Pageable pageable) {
+        return productRepository.search(query, pageable)
+                .map(ProductResponse::fromEntity);
     }
 
     private Category resolveCategory(String categoryName) {

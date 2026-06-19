@@ -29,9 +29,10 @@ public class PaymentPortResolver {
     }
 
     public PaymentPort resolve(String paymentMethod) {
-        PaymentPort port = portMap.get(paymentMethod);
+        String normalized = paymentMethod.trim().toLowerCase();
+        PaymentPort port = portMap.get(normalized);
         if (port == null) {
-            throw new UnsupportedPaymentMethodException(paymentMethod, getSupportedMethods());
+            throw new UnsupportedPaymentMethodException(paymentMethod, portMap.keySet());
         }
         return port;
     }
