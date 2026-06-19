@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import {
-  Box, Typography, TextField, Button, Snackbar, Alert, InputAdornment
+  Box, Typography, TextField, Button, Snackbar, Alert, InputAdornment, Pagination
 } from '@mui/material';
 import { Add, Search, UploadFile } from '@mui/icons-material';
 import ProductTable from '../components/products/ProductTable';
@@ -14,19 +14,24 @@ export default function ProductsPage() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [page, setPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  const [totalElements, setTotalElements] = useState(0);
   const [modalOpen, setModalOpen] = useState(false);
   const [importModalOpen, setImportModalOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const debounceRef = useRef(null);
 
-  const fetchProducts = useCallback(async (query = '') => {
+  const fetchProducts = useCallback(async (query = '', p = 0) => {
     setLoading(true);
     try {
       const response = query
-        ? await searchProducts(query)
-        : await getProducts();
-      setProducts(response.data);
+        ? await searchProducts(query, p, 10)
+        : await getProducts(p, 10);
+      setProducts(response.data.content);
+      setTotalPages(response.data.totalPages);
+      setTotalElements(response.data.totalElements);
     } catch {
       showSnackbar('Failed to load products', 'error');
     } finally {
@@ -41,10 +46,15 @@ export default function ProductsPage() {
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
-      fetchProducts(searchQuery);
+      setPage(0);
+      fetchProducts(searchQuery, 0);
     }, 300);
     return () => clearTimeout(debounceRef.current);
   }, [searchQuery, fetchProducts]);
+
+  useEffect(() => {
+    fetchProducts(searchQuery, page);
+  }, [page, fetchProducts, searchQuery]);
 
   const showSnackbar = (message, severity = 'success') => {
     setSnackbar({ open: true, message, severity });
@@ -69,14 +79,14 @@ export default function ProductsPage() {
       showSnackbar('Product created successfully');
     }
     setModalOpen(false);
-    fetchProducts(searchQuery);
+    fetchProducts(searchQuery, page);
   };
 
   const handleDelete = async (id) => {
     try {
       await deleteProduct(id);
       showSnackbar('Product deleted successfully');
-      fetchProducts(searchQuery);
+      fetchProducts(searchQuery, page);
     } catch {
       showSnackbar('Failed to delete product', 'error');
     }
@@ -84,7 +94,7 @@ export default function ProductsPage() {
 
   const handleImportComplete = () => {
     setImportModalOpen(false);
-    fetchProducts(searchQuery);
+    fetchProducts(searchQuery, page);
     showSnackbar('CSV import completed');
   };
 
@@ -123,11 +133,23 @@ export default function ProductsPage() {
         </Button>
       </Box>
 
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+        {totalElements} products found
+      </Typography>
+
       <ProductTable
         products={products}
         onEdit={handleOpenEdit}
         onDelete={handleDelete}
         loading={loading}
+      />
+
+      <Pagination
+        count={totalPages}
+        page={page + 1}
+        onChange={(e, value) => setPage(value - 1)}
+        color="primary"
+        sx={{ mt: 2, display: 'flex', justifyContent: 'center' }}
       />
 
       <ProductModal
