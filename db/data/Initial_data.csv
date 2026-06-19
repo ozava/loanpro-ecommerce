@@ -17,7 +17,6 @@ Desk Lamp,DL-007,Adjustable LED desk lamp with dimmer,Home & Office,45.50,-5,2.1
 Backpack,BP-008,"Water-resistant laptop backpack, 30L capacity",Accessories,64.99,90,0.9
 Cookbook,CK-009,"Mediterranean diet recipes, hardcover, 300 pages",Books,27.50,100,0.85
 Jump Rope,JR-022,"Speed jump rope, adjustable length, ball bearing",Sports,9.99,400,0.2
-<script>alert('xss')</script>,XS-001,Totally normal product description,Electronics,19.99,100,0.1
 Essential Oils Set,EO-030,"Set of 6 aromatherapy oils, 10ml each",Beauty,24.99,160,0.12
 Resistance Bands,RB-018,"Set of 5 latex resistance bands, varying tension",Sports,19.99,600,0.4
 Plant Pot,PLT-006,"Ceramic plant pot with drainage hole, medium size",Home & Office,15.99,220,1.8
