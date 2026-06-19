@@ -109,6 +109,10 @@ public class CsvImportService {
             String name = validateName(mapped[0], errors);
             String sku = validateSku(mapped[1], errors, csvSeenSkus, existingSkus);
             String description = trimToNull(mapped[2]);
+            if (description != null && containsHtml(description)) {
+                errors.add("description must not contain HTML tags");
+                description = null;
+            }
             String categoryName = validateCategory(mapped[3], errors);
             BigDecimal price = validatePrice(mapped[4], errors);
             Integer stock = validateStock(mapped[5], errors);
@@ -279,6 +283,10 @@ public class CsvImportService {
         return fields.toArray(new String[0]);
     }
 
+    private boolean containsHtml(String value) {
+        return value.contains("<") || value.contains(">");
+    }
+
     private String validateName(String raw, List<String> errors) {
         if (raw == null || raw.trim().isEmpty()) {
             errors.add("name is required");
@@ -287,6 +295,10 @@ public class CsvImportService {
         String trimmed = raw.trim();
         if (trimmed.length() > 200) {
             errors.add("name exceeds 200 characters");
+            return null;
+        }
+        if (containsHtml(trimmed)) {
+            errors.add("name must not contain HTML tags");
             return null;
         }
         return trimmed;
@@ -300,6 +312,10 @@ public class CsvImportService {
         String trimmed = raw.trim();
         if (trimmed.length() > 50) {
             errors.add("sku exceeds 50 characters");
+            return null;
+        }
+        if (containsHtml(trimmed)) {
+            errors.add("sku must not contain HTML tags");
             return null;
         }
         if (csvSeenSkus.contains(trimmed)) {
@@ -317,6 +333,10 @@ public class CsvImportService {
     private String validateCategory(String raw, List<String> errors) {
         if (raw == null || raw.trim().isEmpty()) {
             errors.add("category is required");
+            return null;
+        }
+        if (containsHtml(raw.trim())) {
+            errors.add("category must not contain HTML tags");
             return null;
         }
         return raw.trim();
