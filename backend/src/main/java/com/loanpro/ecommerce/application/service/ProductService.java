@@ -73,6 +73,16 @@ public class ProductService {
                 .toList();
     }
 
+    private Category resolveCategory(String categoryName) {
+        if (categoryName == null || categoryName.isBlank()) {
+            return null;
+        }
+        String normalized = categoryName.trim().substring(0, 1).toUpperCase()
+                + categoryName.trim().substring(1).toLowerCase();
+        return categoryRepository.findByNameIgnoreCase(normalized)
+                .orElseGet(() -> categoryRepository.save(Category.builder().name(normalized).build()));
+    }
+
     private Product mapToEntity(ProductRequest request, Product product) {
         product.setName(request.name());
         product.setSku(request.sku());
@@ -80,15 +90,7 @@ public class ProductService {
         product.setPrice(request.price());
         product.setStock(request.stock());
         product.setWeightKg(request.weightKg());
-
-        if (request.categoryId() != null) {
-            Category category = categoryRepository.findById(request.categoryId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Category not found with id: " + request.categoryId()));
-            product.setCategory(category);
-        } else {
-            product.setCategory(null);
-        }
-
+        product.setCategory(resolveCategory(request.categoryName()));
         return product;
     }
 }

@@ -11,7 +11,7 @@ public record ProductRequest(
         @NotBlank String name,
         @NotBlank String sku,
         String description,
-        Long categoryId,
+        String categoryName,
         @NotNull @DecimalMin("0.00") BigDecimal price,
         @NotNull @Min(0) Integer stock,
         BigDecimal weightKg
